@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+<meta charset="UTF-8">
+<title>Car Racing</title>
+<style>
+body {
+    background: #111;
+    margin: 0;
+    font-family: Arial, sans-serif;
+    overflow: hidden;
+}
+h1 {
+    color: #fff;
+    text-align: center;
+    margin-top: 10px;
+    font-size: 2.5rem;
+    text-shadow: 0 0 10px #00eaff;
+}
+.game-container {
+    width: 420px;
+    height: 700px;
+    margin: 10px auto;
+    border: 3px solid #222;
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+    background: #3a3a3a; 
+}
+.road {
+    width: 380px; 
+    height: 100%;
+    position: absolute;
+    left: 20px; 
+    overflow: hidden;
+    background: #444; 
+    box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.8);
+    border-left: 5px solid #666; 
+    border-right: 5px solid #666;
+}
+/* Road stripes */
+.road::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    width: 12px;
+    height: 200%;
+    background: repeating-linear-gradient(white 0 40px, transparent 40px 80px);
+    transform: translateX(-50%);
+    animation: roadMove 1s linear infinite;
+}
+@keyframes roadMove { 0% { top: -100%; } 100% { top: 0%; } }
+
+/* 🏎️ Car Racing Look - CON EMOJI */
+#car {
+    position: absolute;
+    bottom: 40px;
+    left: 170px;
+    z-index: 100;
+    font-size: 100px;
+    filter: drop-shadow(0 0 8px rgba(0, 234, 255, 0.7));
+    transform: scaleX(-1);
+    text-align: center;
+    width: 100px;
+    height: 100px;
+    line-height: 100px;
+    animation: carFloat 2s ease-in-out infinite;
+    transition: transform 0.1s;
+}
+
+/* Animación flotante para el coche */
+@keyframes carFloat {
+    0%, 100% { transform: scaleX(-1) translateY(0px); }
+    50% { transform: scaleX(-1) translateY(-5px); }
+}
+
+/* Efecto de movimiento */
+#car::after {
+    content: "";
+    position: absolute;
+    bottom: -15px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80px;
+    height: 8px;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 50%;
+    animation: shadowPulse 2s ease-in-out infinite;
+}
+
+@keyframes shadowPulse {
+    0%, 100% { width: 80px; opacity: 0.4; }
+    50% { width: 90px; opacity: 0.6; }
+}
+
+/* Efecto de brillo en el emoji */
+#car:hover {
+    filter: drop-shadow(0 0 12px rgba(0, 234, 255, 1)) brightness(1.2);
+}
+
+/* Obstáculos con emojis */
+.obstacle {
+    position: absolute;
+    top: -200px;
+    z-index: 50;
+    font-size: 50px;
+    text-align: center;
+    filter: drop-shadow(0 5px 5px rgba(0, 0, 0, 0.5));
+    animation: wobble 3s ease-in-out infinite;
+}
+
+/* Diferentes tamaños para diferentes objetos */
+.obstacle.cone {
+    font-size: 60px;
+    animation: wobble 2s ease-in-out infinite;
+}
+
+.obstacle.gas {
+    font-size: 55px;
+    animation: rotate 4s linear infinite;
+}
+
+.obstacle.barrier {
+    font-size: 65px;
+    animation: wobble 2.5s ease-in-out infinite;
+}
+
+.obstacle.rock {
+    font-size: 45px;
+    animation: wobble 1.5s ease-in-out infinite;
+}
+
+.obstacle.warning {
+    font-size: 70px;
+    animation: pulse 1s ease-in-out infinite;
+}
+
+@keyframes wobble {
+    0%, 100% { transform: rotate(-3deg); }
+    50% { transform: rotate(3deg); }
+}
+
+@keyframes rotate {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
+/* Alonso text */
+#alonso {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 38px;
+    color: #00ffea;
+    text-shadow: 0 0 12px cyan;
+    opacity: 0;
+    transition: opacity 0.3s;
+    z-index: 20;
+}
+
+/* Score */
+#scoreBox {
+    position: absolute; 
+    top: 10px; 
+    left: 10px;
+    color: white; 
+    font-size: 22px;
+    font-weight: bold;
+    z-index: 20;
+    background: rgba(0,0,0,0.5);
+    padding: 5px 10px;
+    border-radius: 5px;
+}
+
+/* Mejores puntuaciones */
+#highScores {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    color: white;
+    font-size: 16px;
+    z-index: 20;
+    background: rgba(0,0,0,0.7);
+    padding: 10px;
+    border-radius: 8px;
+    min-width: 150px;
+    box-shadow: 0 0 10px rgba(0, 234, 255, 0.3);
+}
+
+#highScores h3 {
+    margin: 0 0 8px 0;
+    color: #00eaff;
+    text-align: center;
+    font-size: 18px;
+}
+
+#highScoresList {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+#highScoresList li {
+    padding: 4px 8px;
+    margin-bottom: 3px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 3px;
+    display: flex;
+    justify-content: space-between;
+}
+
+#highScoresList li:nth-child(1) {
+    background: rgba(255, 215, 0, 0.2);
+    color: gold;
+    font-weight: bold;
+}
+
+#highScoresList li:nth-child(2) {
+    background: rgba(192, 192, 192, 0.2);
+    color: silver;
+}
+
+#highScoresList li:nth-child(3) {
+    background: rgba(205, 127, 50, 0.2);
+    color: #cd7f32;
+}
+
+/* Botones */
+.buttons {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 15px;
+}
+
+button {
+    margin-top: 12px; 
+    padding: 12px 25px;
+    font-size: 18px; 
+    background: #00eaff;
+    border:0; 
+    border-radius:10px; 
+    cursor:pointer;
+    font-weight: bold;
+    transition: all 0.3s;
+}
+button:hover { 
+    background: #55f4ff; 
+    transform: scale(1.05);
+}
+#restartBtn {
+    background: linear-gradient(to right, #00eaff, #0088cc);
+}
+#resetScoresBtn {
+    background: linear-gradient(to right, #ff5555, #cc0000);
+    color: white;
+}
+
+/* Efecto de explosión para colisión */
+.explosion {
+    position: absolute;
+    font-size: 60px;
+    z-index: 30;
+    pointer-events: none;
+    animation: explode 1s forwards;
+}
+
+@keyframes explode {
+    0% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: scale(3);
+    }
+}
+
+/* Efecto de recogida de gasolina */
+.gas-collected {
+    position: absolute;
+    font-size: 40px;
+    z-index: 30;
+    pointer-events: none;
+    animation: floatUp 1s forwards;
+}
+
+@keyframes floatUp {
+    0% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(-50px) scale(1.5);
+    }
+}
+
+/* Indicador de velocidad */
+#speedIndicator {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    color: white;
+    font-size: 16px;
+    background: rgba(0,0,0,0.5);
+    padding: 5px 10px;
+    border-radius: 5px;
+    z-index: 20;
+}
+
+/* Contador de gasolina */
+#fuelCounter {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    color: #ffd700;
+    font-size: 16px;
+    background: rgba(0,0,0,0.5);
+    padding: 5px 10px;
+    border-radius: 5px;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+/* Camino seguro indicador */
+.safe-path {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    background: rgba(0, 255, 0, 0.05);
+    border-left: 2px dashed rgba(0, 255, 0, 0.3);
+    border-right: 2px dashed rgba(0, 255, 0, 0.3);
+    z-index: 5;
+    display: none;
+}
+</style>
+</head>
+<body>
+<h1>🏎️ CAR RACING</h1>
+<div class="game-container">
+    <div class="road">
+        <div id="scoreBox">Punts: 0</div>
+        
+        <div id="highScores">
+            <h3>🏆 Millors Resultats</h3>
+            <ul id="highScoresList">
+                <!-- Las puntuaciones se cargarán aquí -->
+            </ul>
+        </div>
+        
+        <div id="alonso">FERNANDO ALONSOOO 33!</div>
+        
+        <div id="fuelCounter">⛽ <span id="fuelCount">0</span></div>
+        <div id="speedIndicator">Velocitat: <span id="speedValue">1.0x</span></div>
+
+        <!-- Camino seguro (solo para debug, se puede ocultar) -->
+        <div id="safePath" class="safe-path"></div>
+
+        <!-- COCHE CON EMOJI 🏎️ -->
+        <div id="car">🏎️</div>
+
+        <!-- Los obstáculos se crearán dinámicamente -->
+    </div>
+</div>
+
+<div class="buttons">
+    <button id="restartBtn">↻ Reiniciar</button>
+    <button id="resetScoresBtn">🗑️ Borrar Rècords</button>
+</div>
+
+<script>
+// VARIABLES
+let car = document.getElementById("car");
+let alonso = document.getElementById("alonso");
+let scoreBox = document.getElementById("scoreBox");
+let highScoresList = document.getElementById("highScoresList");
+let fuelCountEl = document.getElementById("fuelCount");
+let speedValueEl = document.getElementById("speedValue");
+let safePath = document.getElementById("safePath");
+let carX = 145; 
+let speed = 7; 
+let score = 0;
+let fuel = 0;
+let gameOver = false;
+let moveLeft = false, moveRight = false;
+const lateralSpeed = 6; 
+const roadWidth = 380; 
+const carWidth = 100;
+const MAX_HIGH_SCORES = 5;
+const MIN_GAP_SIZE = 150; // Espacio mínimo entre obstáculos
+const MAX_OBSTACLES = 3; // Máximo de obstáculos a la vez
+
+// Tipos de obstáculos
+const OBSTACLE_TYPES = [
+    { emoji: "🚧", type: "barrier", class: "barrier", points: 0, isObstacle: true, size: 65 },
+    { emoji: "🧱", type: "rock", class: "rock", points: 0, isObstacle: true, size: 45 },
+    { emoji: "⚠️", type: "warning", class: "warning", points: 0, isObstacle: true, size: 70 },
+    { emoji: "🛢️", type: "gas", class: "gas", points: 1, isObstacle: false, size: 55, fuelValue: 10 },
+    { emoji: "⛽", type: "gas2", class: "gas", points: 1, isObstacle: false, size: 55, fuelValue: 15 },
+    { emoji: "🚨", type: "police", class: "warning", points: 0, isObstacle: true, size: 60 }
+];
+
+// Array para almacenar los obstáculos activos
+let obstacles = [];
+let lastObstacleX = -MIN_GAP_SIZE;
+let safeZones = [];
+
+// Cargar mejores puntuaciones al inicio
+let highScores = JSON.parse(localStorage.getItem('carRacingHighScores')) || [];
+
+// Mostrar mejores puntuaciones
+function displayHighScores() {
+    highScoresList.innerHTML = '';
+    
+    if (highScores.length === 0) {
+        highScoresList.innerHTML = '<li style="text-align:center; font-style:italic;">No hi ha registres</li>';
+        return;
+    }
+    
+    highScores.forEach((scoreItem, index) => {
+        const li = document.createElement('li');
+        li.innerHTML = `<span>${index + 1}.</span> <span>${scoreItem.score} punts</span>`;
+        highScoresList.appendChild(li);
+    });
+}
+
+// Guardar nueva puntuación si es entre las mejores
+function saveHighScore(newScore) {
+    const date = new Date().toLocaleDateString('ca-ES');
+    
+    highScores.push({score: newScore, date: date});
+    highScores.sort((a, b) => b.score - a.score);
+    highScores = highScores.slice(0, MAX_HIGH_SCORES);
+    
+    localStorage.setItem('carRacingHighScores', JSON.stringify(highScores));
+    displayHighScores();
+    
+    if (highScores[0] && highScores[0].score === newScore) {
+        setTimeout(() => {
+            alert(`🏆 NOU RÈCORD! Has aconseguit ${newScore} punts! 🎉`);
+        }, 100);
+    }
+}
+
+// Encontrar una posición segura para nuevo obstáculo
+function findSafePosition() {
+    // Definir zonas seguras (espacios entre obstáculos)
+    safeZones = [];
+    
+    if (obstacles.length === 0) {
+        // Si no hay obstáculos, cualquier posición es segura
+        return Math.random() * (roadWidth - 100) + 50;
+    }
+    
+    // Ordenar obstáculos por posición X
+    obstacles.sort((a, b) => a.x - b.x);
+    
+    // Calcular espacios entre obstáculos
+    for (let i = 0; i <= obstacles.length; i++) {
+        let leftBoundary, rightBoundary;
+        
+        if (i === 0) {
+            // Espacio a la izquierda del primer obstáculo
+            leftBoundary = 0;
+            rightBoundary = obstacles[i].x - MIN_GAP_SIZE;
+        } else if (i === obstacles.length) {
+            // Espacio a la derecha del último obstáculo
+            leftBoundary = obstacles[i-1].x + MIN_GAP_SIZE;
+            rightBoundary = roadWidth;
+        } else {
+            // Espacio entre obstáculos
+            leftBoundary = obstacles[i-1].x + MIN_GAP_SIZE;
+            rightBoundary = obstacles[i].x - MIN_GAP_SIZE;
+        }
+        
+        // Si hay espacio suficiente, agregar como zona segura
+        if (rightBoundary - leftBoundary > carWidth + 20) {
+            safeZones.push({left: leftBoundary, right: rightBoundary});
+        }
+    }
+    
+    // Si hay zonas seguras, elegir una al azar
+    if (safeZones.length > 0) {
+        const zone = safeZones[Math.floor(Math.random() * safeZones.length)];
+        const safePosition = zone.left + Math.random() * (zone.right - zone.left - carWidth);
+        return Math.max(50, Math.min(safePosition, roadWidth - 50));
+    }
+    
+    // Si no hay zonas seguras, reducir el número de obstáculos
+    if (obstacles.length >= MAX_OBSTACLES) {
+        return null; // No crear más obstáculos por ahora
+    }
+    
+    // Último recurso: posición aleatoria
+    return Math.random() * (roadWidth - 100) + 50;
+}
+
+// Crear un nuevo obstáculo
+function createObstacle() {
+    // Limitar número de obstáculos simultáneos
+    if (obstacles.length >= MAX_OBSTACLES) return;
+    
+    // Encontrar posición segura
+    const safeX = findSafePosition();
+    if (safeX === null) return;
+    
+    // Determinar tipo (75% gasolina, 25% obstáculo)
+    const isGas = Math.random() < 0.75;
+    let obstacleType;
+    
+    if (isGas) {
+        // Gasolina
+        obstacleType = Math.random() < 0.5 ? OBSTACLE_TYPES[3] : OBSTACLE_TYPES[4];
+    } else {
+        // Obstáculo
+        const obstacleTypes = OBSTACLE_TYPES.filter(o => o.isObstacle);
+        obstacleType = obstacleTypes[Math.floor(Math.random() * obstacleTypes.length)];
+    }
+    
+    const obstacle = document.createElement('div');
+    obstacle.className = `obstacle ${obstacleType.class}`;
+    obstacle.textContent = obstacleType.emoji;
+    obstacle.dataset.type = obstacleType.type;
+    obstacle.dataset.isObstacle = obstacleType.isObstacle;
+    obstacle.dataset.points = obstacleType.points;
+    obstacle.dataset.fuelValue = obstacleType.fuelValue || 0;
+    
+    obstacle.style.left = safeX + 'px';
+    obstacle.style.top = '-200px';
+    obstacle.style.fontSize = obstacleType.size + 'px';
+    
+    document.querySelector('.road').appendChild(obstacle);
+    
+    obstacles.push({
+        element: obstacle,
+        x: safeX,
+        y: -200,
+        speed: speed * (0.8 + Math.random() * 0.4),
+        type: obstacleType.type,
+        isObstacle: obstacleType.isObstacle,
+        points: obstacleType.points,
+        fuelValue: obstacleType.fuelValue || 0
+    });
+    
+    // Actualizar visualización de zona segura (debug)
+    updateSafePathVisual();
+}
+
+// Actualizar visualización de camino seguro
+function updateSafePathVisual() {
+    safeZones = [];
+    
+    if (obstacles.length === 0) {
+        safePath.style.left = '50px';
+        safePath.style.width = (roadWidth - 100) + 'px';
+        return;
+    }
+    
+    obstacles.sort((a, b) => a.x - b.x);
+    
+    // Encontrar la zona segura más grande
+    let largestZone = {left: 0, right: 0, width: 0};
+    
+    for (let i = 0; i <= obstacles.length; i++) {
+        let leftBoundary, rightBoundary;
+        
+        if (i === 0) {
+            leftBoundary = 0;
+            rightBoundary = obstacles[i].x - MIN_GAP_SIZE;
+        } else if (i === obstacles.length) {
+            leftBoundary = obstacles[i-1].x + MIN_GAP_SIZE;
+            rightBoundary = roadWidth;
+        } else {
+            leftBoundary = obstacles[i-1].x + MIN_GAP_SIZE;
+            rightBoundary = obstacles[i].x - MIN_GAP_SIZE;
+        }
+        
+        const width = rightBoundary - leftBoundary;
+        if (width > largestZone.width && width > carWidth + 20) {
+            largestZone = {left: leftBoundary, right: rightBoundary, width: width};
+        }
+    }
+    
+    if (largestZone.width > 0) {
+        safePath.style.left = largestZone.left + 'px';
+        safePath.style.width = largestZone.width + 'px';
+        safePath.style.display = 'block';
+    } else {
+        safePath.style.display = 'none';
+    }
+}
+
+// SHOW ALONSO
+function showAlonso(){
+    alonso.innerHTML = "¡FERNANDO ALONSOOO 33!";
+    alonso.style.opacity = 1;
+    setTimeout(()=> alonso.style.opacity = 0, 1500);
+}
+
+// Crear efecto de explosión
+function createExplosion(x, y) {
+    const explosion = document.createElement('div');
+    explosion.className = 'explosion';
+    explosion.textContent = '💥';
+    explosion.style.left = x + 'px';
+    explosion.style.top = y + 'px';
+    document.querySelector('.road').appendChild(explosion);
+    
+    setTimeout(() => {
+        explosion.remove();
+    }, 1000);
+}
+
+// Crear efecto de recogida de gasolina
+function createGasEffect(x, y, emoji) {
+    const effect = document.createElement('div');
+    effect.className = 'gas-collected';
+    effect.textContent = emoji;
+    effect.style.left = x + 'px';
+    effect.style.top = y + 'px';
+    document.querySelector('.road').appendChild(effect);
+    
+    setTimeout(() => {
+        effect.remove();
+    }, 1000);
+}
+
+// MOVEMENT
+document.addEventListener("keydown", e => {
+    if(e.key==="ArrowLeft" || e.key==="a" || e.key==="A") moveLeft=true;
+    if(e.key==="ArrowRight" || e.key==="d" || e.key==="D") moveRight=true;
+});
+document.addEventListener("keyup", e => {
+    if(e.key==="ArrowLeft" || e.key==="a" || e.key==="A") moveLeft=false;
+    if(e.key==="ArrowRight" || e.key==="d" || e.key==="D") moveRight=false;
+});
+
+// GAME LOOP
+function update(){
+    if(gameOver) return;
+
+    if(moveLeft) carX = Math.max(0, carX - lateralSpeed);
+    if(moveRight) carX = Math.min(roadWidth - carWidth, carX + lateralSpeed); 
+    car.style.left = carX+"px";
+
+    moveObstacles();
+    requestAnimationFrame(update);
+}
+
+// MOVIMIENTO DE OBSTÁCULOS
+function moveObstacles() {
+    for (let i = obstacles.length - 1; i >= 0; i--) {
+        const obs = obstacles[i];
+        obs.y += obs.speed;
+        obs.element.style.top = obs.y + 'px';
+        
+        // Detectar colisión cuando el obstáculo está cerca del coche
+        if (obs.y > 500 && obs.y < 650) {
+            const carRect = car.getBoundingClientRect();
+            const obsRect = obs.element.getBoundingClientRect();
+            
+            // Colisión más precisa
+            const carCenterX = carRect.left + carRect.width / 2;
+            const carCenterY = carRect.top + carRect.height / 2;
+            const obsCenterX = obsRect.left + obsRect.width / 2;
+            const obsCenterY = obsRect.top + obsRect.height / 2;
+            
+            const distanceX = Math.abs(carCenterX - obsCenterX);
+            const distanceY = Math.abs(carCenterY - obsCenterY);
+            
+            const collisionDistanceX = (carRect.width / 2) + (obsRect.width / 2) - 20;
+            const collisionDistanceY = (carRect.height / 2) + (obsRect.height / 2) - 20;
+            
+            if (distanceX < collisionDistanceX && distanceY < collisionDistanceY) {
+                
+                if (obs.isObstacle) {
+                    // Colisión con obstáculo
+                    gameOver=true;
+                    const explosionX = (carRect.left + carRect.right) / 2;
+                    const explosionY = (carRect.top + carRect.bottom) / 2;
+                    createExplosion(explosionX, explosionY);
+                    
+                    const minHighScore = highScores.length > 0 ? 
+                        Math.min(...highScores.map(s => s.score)) : 0;
+                        
+                    if (score > minHighScore || highScores.length < MAX_HIGH_SCORES) {
+                        saveHighScore(score);
+                    }
+                    
+                    setTimeout(() => {
+                        alert(`💥 Xoc amb ${obs.element.textContent}! Puntuació: ${score} 💔\nGasolina recollida: ${fuel}⛽`);
+                    }, 300);
+                    return;
+                } else {
+                    // Recoger gasolina
+                    score += obs.points;
+                    fuel += obs.fuelValue;
+                    createGasEffect(obs.x, obs.y, '⛽+' + obs.fuelValue);
+                    
+                    // Efecto visual en el coche
+                    car.style.filter = 'drop-shadow(0 0 15px gold) brightness(1.3)';
+                    setTimeout(() => {
+                        car.style.filter = 'drop-shadow(0 0 8px rgba(0, 234, 255, 0.7))';
+                    }, 300);
+                    
+                    updateHUD();
+                }
+                
+                // Eliminar el objeto
+                obs.element.remove();
+                obstacles.splice(i, 1);
+                updateSafePathVisual();
+                continue;
+            }
+        }
+        
+        // Eliminar si sale de pantalla
+        if (obs.y > 700) {
+            if (obs.isObstacle) {
+                score += 2; // Más puntos por esquivar obstáculos
+                updateHUD();
+            }
+            obs.element.remove();
+            obstacles.splice(i, 1);
+            updateSafePathVisual();
+        }
+    }
+    
+    // Crear nuevos obstáculos menos frecuentemente
+    if (obstacles.length < MAX_OBSTACLES && Math.random() < 0.008) {
+        createObstacle();
+    }
+}
+
+// ACTUALIZAR HUD
+function updateHUD() {
+    scoreBox.innerHTML = "Punts: " + score;
+    fuelCountEl.textContent = fuel;
+    
+    // Calcular velocidad basada en puntuación
+    const speedMultiplier = 1 + score * 0.02;
+    speedValueEl.textContent = speedMultiplier.toFixed(1) + "x";
+    
+    // Aumentar velocidad de caída con la puntuación
+    speed = 7 * Math.min(speedMultiplier, 3); // Límite de 3x
+}
+
+// RESTART
+function restartGame() {
+    carX = 145; 
+    car.style.left = "145px";
+    speed = 7; 
+    score = 0;
+    fuel = 0;
+    gameOver = false;
+    
+    // Eliminar todos los obstáculos
+    obstacles.forEach(obs => obs.element.remove());
+    obstacles = [];
+    safeZones = [];
+    safePath.style.display = 'none';
+    
+    updateHUD();
+    update();
+}
+
+// Inicializar
+update();
+displayHighScores();
+updateHUD();
+
+// Crear primer obstáculo después de un tiempo
+setTimeout(() => {
+    if (!gameOver) {
+        createObstacle();
+    }
+}, 1000);
+
+// Crear obstáculos periódicamente pero menos frecuentemente
+setInterval(() => {
+    if (!gameOver && obstacles.length < MAX_OBSTACLES) {
+        createObstacle();
+    }
+}, 2000); // Cada 2 segundos en lugar de 1.5
+
+// Event listeners para botones
+document.getElementById("restartBtn").onclick = restartGame;
+
+document.getElementById("resetScoresBtn").onclick = () => {
+    if (confirm("Estàs segur que vols borrar TOTS els rècords?")) {
+        localStorage.removeItem('carRacingHighScores');
+        highScores = [];
+        displayHighScores();
+        alert("Rècords borrats correctament.");
+    }
+};
+
+// Mostrar controles al inicio
+setTimeout(() => {
+    alert("🏎️ CONTROLS DEL JOC:\n\n← → (Fletxes) o A/D: Moure el cotxe\n\n🎯 OBJECTIU:\n- Evita obstacles (🚧⚠️🚨) - Game Over!\n- Recull gasolina (⛽🛢️) - +Punts i +Gasolina\n\n💡 EL JOC SEMPRE DEIXA UN CAMÍ LLIURE PER PASSAR!\n\n🏆 Els teus millors resultats es guarden automàticament\n\nBona sort!");
+}, 500);
+</script>
+</body>
+</html>

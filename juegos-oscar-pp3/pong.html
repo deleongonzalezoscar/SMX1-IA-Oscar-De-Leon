@@ -1,0 +1,939 @@
+<!doctype html>
+<html lang="ca">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Pong Real Madrid vs Barcelona</title>
+    <style>
+        :root {
+            --madrid-white: #FFFFFF;
+            --madrid-blue: #0D2D5C;
+            --madrid-gold: #FEBE10;
+            --barca-blue: #004D98;
+            --barca-red: #A50044;
+            --barca-yellow: #EDBB00;
+            --dark-blue: #071027;
+            --accent: #3fd1c7;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #051022 0%, #0a1a36 50%, #0D2D5C 100%);
+            color: var(--madrid-white);
+            font-family: 'Segoe UI', 'Arial', sans-serif;
+            overflow: hidden;
+        }
+        
+        .stadium-bg {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 50% 30%, rgba(13, 45, 92, 0.7) 0%, rgba(7, 16, 39, 0.9) 70%);
+            z-index: -2;
+        }
+        
+        .pitch-lines {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.1;
+        }
+        
+        .pitch-lines::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 2px;
+            height: 100%;
+            background: var(--madrid-white);
+        }
+        
+        .pitch-lines::after {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 200px;
+            height: 200px;
+            border: 2px solid var(--madrid-white);
+            border-radius: 50%;
+        }
+        
+        .madrid-logo {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(253, 190, 16, 0.05) 0%, rgba(253, 190, 16, 0.02) 70%, transparent 100%);
+            z-index: -1;
+            opacity: 0.3;
+        }
+        
+        .container {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .ui {
+            text-align: center;
+            padding: 15px 25px;
+            background: rgba(13, 45, 92, 0.8);
+            border: 2px solid var(--madrid-gold);
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+            z-index: 10;
+        }
+        
+        .score {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: var(--madrid-gold);
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+            letter-spacing: 1px;
+        }
+        
+        .team-names {
+            display: flex;
+            justify-content: space-between;
+            font-size: 16px;
+            margin-bottom: 5px;
+            color: rgba(255, 255, 255, 0.9);
+        }
+        
+        .team-names span:first-child {
+            color: var(--madrid-white);
+            font-weight: bold;
+        }
+        
+        .team-names span:last-child {
+            color: var(--barca-yellow);
+            font-weight: bold;
+        }
+        
+        .info {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.7);
+            margin-top: 5px;
+        }
+        
+        canvas {
+            background: rgba(3, 10, 28, 0.85);
+            border: 4px solid var(--madrid-gold);
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+        }
+        
+        .overlay {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(7, 16, 39, 0.9);
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        
+        .overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+        
+        .card {
+            background: linear-gradient(145deg, rgba(13, 45, 92, 0.95) 0%, rgba(7, 25, 55, 0.95) 100%);
+            border: 3px solid var(--madrid-gold);
+            padding: 30px 40px;
+            border-radius: 15px;
+            color: var(--madrid-white);
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+            max-width: 500px;
+            width: 90%;
+        }
+        
+        .overlay.active .card {
+            transform: scale(1);
+        }
+        
+        .card h2 {
+            color: var(--madrid-gold);
+            margin-bottom: 20px;
+            font-size: 32px;
+        }
+        
+        .card p {
+            margin-bottom: 25px;
+            font-size: 18px;
+            line-height: 1.5;
+        }
+        
+        button {
+            background: linear-gradient(to bottom, var(--madrid-gold) 0%, #e0a500 100%);
+            border: none;
+            padding: 12px 25px;
+            border-radius: 6px;
+            color: var(--madrid-blue);
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 16px;
+            letter-spacing: 1px;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+        }
+        
+        button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .controls-info {
+            display: flex;
+            justify-content: space-between;
+            width: 800px;
+            margin-top: 10px;
+        }
+        
+        .control-box {
+            background: rgba(13, 45, 92, 0.7);
+            border: 1px solid rgba(253, 190, 16, 0.3);
+            border-radius: 8px;
+            padding: 10px 15px;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.8);
+            text-align: center;
+            width: 48%;
+        }
+        
+        .control-box h3 {
+            color: var(--madrid-gold);
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+        
+        .madrid-badge {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 70px;
+            height: 70px;
+            background: radial-gradient(circle, var(--madrid-gold) 0%, #e0a500 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: var(--madrid-blue);
+            font-size: 24px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+            border: 2px solid white;
+        }
+        
+        .clasico-badge {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(45deg, var(--barca-blue) 0%, var(--barca-red) 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: var(--barca-yellow);
+            font-size: 24px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+            border: 2px solid white;
+        }
+        
+        @media (max-width: 850px) {
+            canvas {
+                width: 95vw;
+                height: auto;
+                max-height: 70vh;
+            }
+            
+            .controls-info {
+                width: 95vw;
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .control-box {
+                width: 100%;
+            }
+            
+            .ui {
+                width: 95vw;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="stadium-bg"></div>
+    <div class="pitch-lines"></div>
+    <div class="madrid-logo"></div>
+    
+    <div class="madrid-badge">RM</div>
+    <div class="clasico-badge">FCB</div>
+    
+    <div class="container">
+        <div class="ui">
+            <div class="team-names">
+                <span>REAL MADRID</span>
+                <span>BARCELONA</span>
+            </div>
+            <div class="score" id="score">0 — 0</div>
+            <div class="info">Fletxes amunt/avall per moure. Guanya qui arriba a 11.</div>
+        </div>
+        
+        <canvas id="c" width="800" height="500"></canvas>
+        
+        <div class="controls-info">
+            <div class="control-box">
+                <h3>CONTROLS JUGADOR</h3>
+                <div>Fletxa AMUNT: Moure cap amunt</div>
+                <div>Fletxa AVALL: Moure cap avall</div>
+                <div>ESPACI: Reiniciar partida</div>
+            </div>
+            <div class="control-box">
+                <h3>EL CLÁSICO - ESTADI SANTIAGO BERNABÉU</h3>
+                <div>Partit Pong del Clásico: Real Madrid vs Barcelona</div>
+                <div>Guanya el primer que arribi a 11 gols</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="overlay" id="overlay">
+        <div class="card" id="card">
+            <h2 id="resultTitle">PARTIT FINALITZAT</h2>
+            <p id="resultText"></p>
+            <div style="margin-top: 25px;">
+                <button id="restart">TORNAR A JUGAR</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const canvas = document.getElementById('c');
+        const ctx = canvas.getContext('2d');
+        const W = canvas.width, H = canvas.height;
+        
+        // Colors dels equips
+        const colors = {
+            madridWhite: '#FFFFFF',
+            madridBlue: '#0D2D5C',
+            madridGold: '#FEBE10',
+            barcaBlue: '#004D98',
+            barcaRed: '#A50044',
+            barcaYellow: '#EDBB00',
+            ballWhite: '#FFFFFF',
+            ballBlack: '#000000',
+            ballGray: '#666666'
+        };
+        
+        // Jugador a l'esquerra (Real Madrid), oponent a la dreta (Barcelona)
+        const paddle = {
+            w: 14,
+            h: 110,
+            speed: 7
+        };
+        
+        const player = {
+            x: 30,
+            y: (H - paddle.h) / 2,
+            w: paddle.w,
+            h: paddle.h,
+            dy: 0,
+            color: colors.madridWhite,
+            team: 'REAL MADRID'
+        };
+        
+        const enemy = {
+            x: W - 30 - paddle.w,
+            y: (H - paddle.h) / 2,
+            w: paddle.w,
+            h: paddle.h,
+            dy: 0,
+            color: colors.barcaBlue,
+            team: 'BARCELONA'
+        };
+        
+        // Balón de fútbol (más grande para ver mejor los detalles)
+        let ball = {
+            x: W / 2,
+            y: H / 2,
+            r: 16, // Más grande para ver los detalles
+            dx: 5,
+            dy: 3.5,
+            rotation: 0, // Para la rotación del balón
+            rotationSpeed: 0.05, // Velocidad de rotación
+            trail: []
+        };
+        
+        let scoreP = 0, scoreE = 0, maxScore = 11;
+        let running = true;
+        let lastTime = 0;
+        
+        // Elements del DOM
+        const scoreEl = document.getElementById('score');
+        const overlay = document.getElementById('overlay');
+        const resultTitle = document.getElementById('resultTitle');
+        const resultText = document.getElementById('resultText');
+        const restartBtn = document.getElementById('restart');
+        
+        // Efectes de partícules per als gols
+        const particles = [];
+        
+        // Inicialització del balón
+        function resetBall(direction = 0) {
+            ball.x = W / 2;
+            ball.y = H / 2;
+            ball.trail = [];
+            ball.rotation = 0;
+            
+            // direction: -1 left scores, 1 right scores, 0 random
+            let angle = (Math.random() * 0.8 - 0.4); // angle una mica més ampli
+            let speed = 5 + Math.random() * 1.5;
+            
+            if (direction === 0) {
+                ball.dx = (Math.random() < 0.5 ? -1 : 1) * speed;
+            } else {
+                ball.dx = direction * speed;
+            }
+            
+            ball.dy = angle * speed * 1.5;
+        }
+        
+        // Funció per a limitar valors
+        function clamp(v, min, max) {
+            return Math.max(min, Math.min(max, v));
+        }
+        
+        // Crear efecte de partícules
+        function createParticles(x, y, color, count) {
+            for (let i = 0; i < count; i++) {
+                particles.push({
+                    x: x,
+                    y: y,
+                    size: Math.random() * 5 + 2,
+                    speedX: Math.random() * 6 - 3,
+                    speedY: Math.random() * 6 - 3,
+                    color: color,
+                    life: 30 + Math.random() * 20
+                });
+            }
+        }
+        
+        // Actualitzar partícules
+        function updateParticles() {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.speedX;
+                p.y += p.speedY;
+                p.life--;
+                
+                // Eliminar partícules mortes
+                if (p.life <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+        }
+        
+        // Actualitzar l'estat del joc
+        function update() {
+            if (!running) return;
+            
+            // Moviment del jugador
+            player.y += player.dy;
+            player.y = clamp(player.y, 0, H - player.h);
+            
+            // IA de l'oponent: segueix el balón amb velocitat limitada
+            const target = ball.y - (enemy.h / 2);
+            const diff = target - enemy.y;
+            const enemySpeed = 4.8; // Una mica més difícil
+            enemy.y += clamp(diff, -enemySpeed, enemySpeed);
+            enemy.y = clamp(enemy.y, 0, H - enemy.h);
+            
+            // Moviment del balón
+            ball.x += ball.dx;
+            ball.y += ball.dy;
+            
+            // Rotación del balón
+            ball.rotation += ball.rotationSpeed;
+            if (ball.rotation > Math.PI * 2) {
+                ball.rotation -= Math.PI * 2;
+            }
+            
+            // Guardar posició per al rastre
+            ball.trail.push({x: ball.x, y: ball.y});
+            if (ball.trail.length > 10) {
+                ball.trail.shift();
+            }
+            
+            // Col·lisió amb les parets superior i inferior
+            if (ball.y - ball.r < 0) {
+                ball.y = ball.r;
+                ball.dy *= -1;
+                createParticles(ball.x, ball.y, colors.madridGold, 5);
+            }
+            
+            if (ball.y + ball.r > H) {
+                ball.y = H - ball.r;
+                ball.dy *= -1;
+                createParticles(ball.x, ball.y, colors.madridGold, 5);
+            }
+            
+            // Col·lisió amb la pala del jugador (Real Madrid)
+            if (ball.x - ball.r < player.x + player.w && ball.dx < 0) {
+                if (ball.y > player.y && ball.y < player.y + player.h) {
+                    ball.x = player.x + player.w + ball.r;
+                    ball.dx *= -1.08; // Increment de velocitat
+                    
+                    // Canviar l'angle segons la posició de l'impacte
+                    let delta = (ball.y - (player.y + player.h / 2)) / (player.h / 2);
+                    ball.dy = delta * Math.abs(ball.dx) * 0.8;
+                    
+                    // Incrementar rotación al golpear
+                    ball.rotationSpeed = Math.abs(ball.dx) * 0.02;
+                    
+                    // Efecte de partícules amb colors del Madrid
+                    createParticles(ball.x, ball.y, colors.madridWhite, 8);
+                    createParticles(ball.x, ball.y, colors.madridGold, 4);
+                }
+            }
+            
+            // Col·lisió amb la pala de l'oponent (Barcelona)
+            if (ball.x + ball.r > enemy.x && ball.dx > 0) {
+                if (ball.y > enemy.y && ball.y < enemy.y + enemy.h) {
+                    ball.x = enemy.x - ball.r;
+                    ball.dx *= -1.05;
+                    
+                    let delta = (ball.y - (enemy.y + enemy.h / 2)) / (enemy.h / 2);
+                    ball.dy = delta * Math.abs(ball.dx) * 0.8;
+                    
+                    // Incrementar rotación al golpear
+                    ball.rotationSpeed = Math.abs(ball.dx) * 0.02;
+                    
+                    // Efecte de partícules amb colors del Barça
+                    createParticles(ball.x, ball.y, colors.barcaBlue, 6);
+                    createParticles(ball.x, ball.y, colors.barcaRed, 6);
+                }
+            }
+            
+            // Actualitzar partícules
+            updateParticles();
+            
+            // Puntuació
+            if (ball.x + ball.r < 0) {
+                // Punt per al Barcelona
+                scoreE++;
+                updateScore();
+                createParticles(W / 2, H / 2, colors.barcaBlue, 15);
+                createParticles(W / 2, H / 2, colors.barcaRed, 15);
+                
+                if (checkGameOver()) return;
+                resetBall(1);
+            } else if (ball.x - ball.r > W) {
+                // Punt per al Real Madrid
+                scoreP++;
+                updateScore();
+                createParticles(W / 2, H / 2, colors.madridGold, 30);
+                
+                if (checkGameOver()) return;
+                resetBall(-1);
+            }
+        }
+        
+        // Actualitzar la puntuació a la pantalla
+        function updateScore() {
+            scoreEl.textContent = `${scoreP} — ${scoreE}`;
+        }
+        
+        // Comprovar si s'ha acabat el partit
+        function checkGameOver() {
+            if (scoreP >= maxScore || scoreE >= maxScore) {
+                running = false;
+                setTimeout(() => {
+                    overlay.classList.add('active');
+                }, 500);
+                
+                const winner = scoreP > scoreE ? 'REAL MADRID' : 'BARCELONA';
+                const winnerColor = scoreP > scoreE ? colors.madridGold : colors.barcaYellow;
+                
+                resultTitle.textContent = `${winner} GUANYA!`;
+                resultTitle.style.color = winnerColor;
+                resultText.textContent = `Resultat final: ${scoreP} — ${scoreE}`;
+                
+                return true;
+            }
+            return false;
+        }
+        
+        // Dibuixar el camp dividit
+        function drawDividedField() {
+            // Mig camp esquerre - Real Madrid (Blanc)
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+            ctx.fillRect(0, 0, W/2, H);
+            
+            // Mig camp dret - Barcelona (Degradat Blau-Roig)
+            const barcaGradient = ctx.createLinearGradient(W/2, 0, W, H);
+            barcaGradient.addColorStop(0, 'rgba(0, 77, 152, 0.3)'); // Blau Barça
+            barcaGradient.addColorStop(1, 'rgba(165, 0, 68, 0.3)'); // Roig Barça
+            
+            ctx.fillStyle = barcaGradient;
+            ctx.fillRect(W/2, 0, W/2, H);
+            
+            // Línia divisòria central
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+            ctx.lineWidth = 4;
+            ctx.setLineDash([20, 15]);
+            ctx.beginPath();
+            ctx.moveTo(W / 2, 0);
+            ctx.lineTo(W / 2, H);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            // Cercle central amb colors del Clásico
+            const circleGradient = ctx.createRadialGradient(
+                W/2, H/2, 0,
+                W/2, H/2, 80
+            );
+            circleGradient.addColorStop(0, 'rgba(255, 255, 255, 0.3)');
+            circleGradient.addColorStop(0.5, 'rgba(253, 190, 16, 0.2)');
+            circleGradient.addColorStop(1, 'rgba(0, 77, 152, 0.2)');
+            
+            ctx.beginPath();
+            ctx.arc(W / 2, H / 2, 80, 0, Math.PI * 2);
+            ctx.strokeStyle = circleGradient;
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            
+            // Logos dels equips al camp
+            // Logo Madrid (simplificat)
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.beginPath();
+            ctx.moveTo(W/4, H/2);
+            ctx.arc(W/4, H/2, 60, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Logo Barça (simplificat)
+            ctx.fillStyle = 'rgba(0, 77, 152, 0.1)';
+            ctx.beginPath();
+            ctx.moveTo(3*W/4, H/2);
+            ctx.arc(3*W/4, H/2, 60, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = 'rgba(165, 0, 68, 0.1)';
+            ctx.beginPath();
+            ctx.moveTo(3*W/4, H/2);
+            ctx.arc(3*W/4, H/2, 45, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        
+        // Función para dibujar un balón de fútbol realista
+        function drawFootballBall(x, y, radius, rotation) {
+            // Guardar el estado del contexto
+            ctx.save();
+            
+            // Mover el contexto a la posición del balón
+            ctx.translate(x, y);
+            
+            // Aplicar rotación
+            ctx.rotate(rotation);
+            
+            // Dibujar el círculo base del balón (blanco)
+            ctx.beginPath();
+            ctx.arc(0, 0, radius, 0, Math.PI * 2);
+            ctx.fillStyle = colors.ballWhite;
+            ctx.fill();
+            
+            // Dibujar el borde gris
+            ctx.beginPath();
+            ctx.arc(0, 0, radius, 0, Math.PI * 2);
+            ctx.strokeStyle = colors.ballGray;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            // Dibujar los pentágonos (paneles negros del balón)
+            ctx.fillStyle = colors.ballBlack;
+            ctx.strokeStyle = colors.ballBlack;
+            ctx.lineWidth = 1.5;
+            
+            // Pentágono central
+            ctx.beginPath();
+            for (let i = 0; i < 5; i++) {
+                const angle = (i * 2 * Math.PI / 5) - Math.PI / 2;
+                const px = Math.cos(angle) * (radius * 0.25);
+                const py = Math.sin(angle) * (radius * 0.25);
+                
+                if (i === 0) {
+                    ctx.moveTo(px, py);
+                } else {
+                    ctx.lineTo(px, py);
+                }
+            }
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+            
+            // Dibujar líneas entre los paneles (hexágonos)
+            ctx.strokeStyle = colors.ballBlack;
+            ctx.lineWidth = 1.8;
+            
+            // Líneas desde el pentágono central
+            for (let i = 0; i < 5; i++) {
+                const angle = (i * 2 * Math.PI / 5) - Math.PI / 2;
+                const startX = Math.cos(angle) * (radius * 0.25);
+                const startY = Math.sin(angle) * (radius * 0.25);
+                
+                // Línea hacia el borde
+                const endX = Math.cos(angle) * (radius * 0.85);
+                const endY = Math.sin(angle) * (radius * 0.85);
+                
+                ctx.beginPath();
+                ctx.moveTo(startX, startY);
+                ctx.lineTo(endX, endY);
+                ctx.stroke();
+            }
+            
+            // Dibujar hexágonos alrededor
+            for (let i = 0; i < 5; i++) {
+                const baseAngle = (i * 2 * Math.PI / 5) - Math.PI / 2;
+                const distance = radius * 0.6;
+                
+                // Posición del hexágono
+                const hexX = Math.cos(baseAngle) * distance;
+                const hexY = Math.sin(baseAngle) * distance;
+                
+                // Dibujar hexágono (simplificado como pequeño círculo con líneas)
+                ctx.beginPath();
+                ctx.arc(hexX, hexY, radius * 0.15, 0, Math.PI * 2);
+                ctx.fillStyle = colors.ballBlack;
+                ctx.fill();
+                ctx.stroke();
+                
+                // Líneas desde el hexágono
+                for (let j = 0; j < 3; j++) {
+                    const lineAngle = baseAngle + (j * 2 * Math.PI / 3) + Math.PI / 6;
+                    const lineEndX = hexX + Math.cos(lineAngle) * (radius * 0.25);
+                    const lineEndY = hexY + Math.sin(lineAngle) * (radius * 0.25);
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(hexX, hexY);
+                    ctx.lineTo(lineEndX, lineEndY);
+                    ctx.stroke();
+                }
+            }
+            
+            // Efecto de brillo/3D
+            const shineGradient = ctx.createRadialGradient(
+                -radius * 0.3, -radius * 0.3, 0,
+                0, 0, radius
+            );
+            shineGradient.addColorStop(0, 'rgba(255, 255, 255, 0.4)');
+            shineGradient.addColorStop(0.7, 'rgba(255, 255, 255, 0.1)');
+            shineGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+            
+            ctx.beginPath();
+            ctx.arc(0, 0, radius, 0, Math.PI * 2);
+            ctx.fillStyle = shineGradient;
+            ctx.fill();
+            
+            // Restaurar el estado del contexto
+            ctx.restore();
+        }
+        
+        // Dibuixar el joc
+        function draw() {
+            // Fons del canvas amb camp dividit
+            drawDividedField();
+            
+            // Rastre del balón
+            for (let i = 0; i < ball.trail.length; i++) {
+                const point = ball.trail[i];
+                const alpha = i / ball.trail.length * 0.5;
+                const trailColor = point.x < W/2 ? colors.madridGold : colors.barcaYellow;
+                
+                ctx.beginPath();
+                ctx.arc(point.x, point.y, ball.r * 0.3 * (i / ball.trail.length), 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(${trailColor === colors.madridGold ? '253, 190, 16' : '237, 187, 0'}, ${alpha})`;
+                ctx.fill();
+            }
+            
+            // Partícules
+            for (const p of particles) {
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fillStyle = p.color;
+                ctx.fill();
+            }
+            
+            // Pales amb colors dels equips
+            // Pala Real Madrid (blanca amb detalls daurats)
+            const playerGradient = ctx.createLinearGradient(
+                player.x, player.y, 
+                player.x + player.w, player.y + player.h
+            );
+            playerGradient.addColorStop(0, colors.madridWhite);
+            playerGradient.addColorStop(1, '#F0F0F0');
+            
+            roundRect(ctx, player.x, player.y, player.w, player.h, 8, playerGradient);
+            
+            // Detalls daurats a la pala del Madrid
+            ctx.fillStyle = colors.madridGold;
+            roundRect(ctx, player.x + 3, player.y + 10, player.w - 6, player.h - 20, 4, true);
+            
+            // Pala Barcelona (blava amb detalls grocs)
+            const enemyGradient = ctx.createLinearGradient(
+                enemy.x, enemy.y, 
+                enemy.x + enemy.w, enemy.y + enemy.h
+            );
+            enemyGradient.addColorStop(0, colors.barcaBlue);
+            enemyGradient.addColorStop(0.5, colors.barcaRed);
+            enemyGradient.addColorStop(1, colors.barcaBlue);
+            
+            roundRect(ctx, enemy.x, enemy.y, enemy.w, enemy.h, 8, enemyGradient);
+            
+            // Detalls grocs a la pala del Barça
+            ctx.fillStyle = colors.barcaYellow;
+            roundRect(ctx, enemy.x + 3, enemy.y + 10, enemy.w - 6, player.h - 20, 4, true);
+            
+            // Dibujar el balón de fútbol
+            drawFootballBall(ball.x, ball.y, ball.r, ball.rotation);
+            
+            // Sombra sota el balón
+            ctx.beginPath();
+            ctx.arc(ball.x + 3, ball.y + 3, ball.r * 0.9, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+            ctx.fill();
+        }
+        
+        // Bucle principal del joc
+        function loop(timestamp) {
+            const deltaTime = timestamp - lastTime || 0;
+            lastTime = timestamp;
+            
+            // Actualitzar només si ha passat suficient temps (per a 60 FPS)
+            if (deltaTime > 16) {
+                update();
+                draw();
+            }
+            
+            requestAnimationFrame(loop);
+        }
+        
+        // Funció per a crear rectangles arrodonits
+        function roundRect(ctx, x, y, w, h, r, fill) {
+            if (typeof fill === 'string' || fill instanceof CanvasGradient) {
+                ctx.fillStyle = fill;
+            }
+            
+            ctx.beginPath();
+            ctx.moveTo(x + r, y);
+            ctx.lineTo(x + w - r, y);
+            ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+            ctx.lineTo(x + w, y + h - r);
+            ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+            ctx.lineTo(x + r, y + h);
+            ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+            ctx.lineTo(x, y + r);
+            ctx.quadraticCurveTo(x, y, x + r, y);
+            ctx.closePath();
+            
+            if (fill === true || typeof fill === 'string' || fill instanceof CanvasGradient) {
+                ctx.fill();
+            }
+        }
+        
+        // Gestió d'entrada del teclat
+        window.addEventListener('keydown', e => {
+            if (e.key === 'ArrowUp') {
+                player.dy = -paddle.speed;
+                e.preventDefault();
+            }
+            
+            if (e.key === 'ArrowDown') {
+                player.dy = paddle.speed;
+                e.preventDefault();
+            }
+            
+            if (e.key === ' ' && !running) {
+                restart();
+            }
+            
+            // Pausar el joc amb la tecla P
+            if (e.key === 'p' || e.key === 'P') {
+                running = !running;
+                if (running) {
+                    requestAnimationFrame(loop);
+                }
+            }
+        });
+        
+        window.addEventListener('keyup', e => {
+            if ((e.key === 'ArrowUp' && player.dy < 0) || 
+                (e.key === 'ArrowDown' && player.dy > 0)) {
+                player.dy = 0;
+            }
+        });
+        
+        // Reiniciar el joc
+        restartBtn.addEventListener('click', restart);
+        
+        function restart() {
+            scoreP = 0;
+            scoreE = 0;
+            updateScore();
+            player.y = (H - player.h) / 2;
+            enemy.y = (H - enemy.h) / 2;
+            particles.length = 0;
+            resetBall((Math.random() < 0.5) ? -1 : 1);
+            running = true;
+            overlay.classList.remove('active');
+            requestAnimationFrame(loop);
+        }
+        
+        // Iniciar el joc
+        updateScore();
+        resetBall((Math.random() < 0.5) ? -1 : 1);
+        requestAnimationFrame(loop);
+        
+        // Efecte d'inici
+        setTimeout(() => {
+            createParticles(W / 2, H / 2, colors.madridGold, 15);
+            createParticles(W / 2, H / 2, colors.barcaBlue, 15);
+            createParticles(W / 2, H / 2, colors.barcaRed, 15);
+        }, 300);
+    </script>
+</body>
+</html>

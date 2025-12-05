@@ -1,0 +1,1145 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Caçador de Fruites - Joc HTML5</title>
+
+<style>
+:root {
+  --color-primary: #4aa3ff;
+  --color-primary-hover: #7bc0ff;
+  --color-danger: #ff4757;
+  --color-success: #2ecc71;
+  --color-warning: #f39c12;
+  --color-bg-light: #d7e9ff;
+  --color-bg-dark: #a8c8ff;
+  --color-basket: #8b5a2b;
+  --color-basket-light: #a6713a;
+  --color-basket-dark: #4b3417;
+  --color-text: #123;
+  --shadow-color: rgba(0,0,0,0.45);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--color-bg-light) 0%, #c2d9ff 100%);
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  overflow: hidden;
+  user-select: none;
+}
+
+canvas {
+  display: block;
+  border: 3px solid #2c3e50;
+  border-radius: 8px;
+  background: #bcd4ff;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+}
+
+.hud {
+  display: flex;
+  gap: 20px;
+  margin: 20px 12px;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--color-text);
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.hud-item {
+  background: rgba(255, 255, 255, 0.85);
+  padding: 10px 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  min-width: 160px;
+  text-align: center;
+  transition: transform 0.2s;
+}
+
+.hud-item:hover {
+  transform: translateY(-2px);
+}
+
+.hud-item.danger {
+  background: rgba(255, 71, 87, 0.1);
+  border: 2px solid var(--color-danger);
+  color: var(--color-danger);
+  animation: pulse 1.5s infinite;
+}
+
+.hud-item.high-scores {
+  background: rgba(74, 163, 255, 0.1);
+  border: 2px solid var(--color-primary);
+  color: var(--color-primary);
+  min-width: 200px;
+  position: relative;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+/* Marcador de mejores resultados */
+.high-scores-panel {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 0 0 10px 10px;
+  padding: 15px;
+  margin-top: 5px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  display: none;
+  z-index: 100;
+  backdrop-filter: blur(10px);
+}
+
+.hud-item.high-scores:hover .high-scores-panel {
+  display: block;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.high-scores-panel h4 {
+  margin: 0 0 10px 0;
+  color: #2c3e50;
+  font-size: 18px;
+  text-align: center;
+  border-bottom: 2px solid var(--color-primary);
+  padding-bottom: 5px;
+}
+
+.high-scores-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.high-scores-list li {
+  padding: 8px 12px;
+  margin-bottom: 5px;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 16px;
+  transition: all 0.2s;
+}
+
+.high-scores-list li:hover {
+  background: rgba(74, 163, 255, 0.1);
+  transform: translateX(5px);
+}
+
+.high-scores-list li:nth-child(1) {
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(255, 215, 0, 0.25));
+  border-left: 4px solid gold;
+  font-weight: bold;
+  color: #b8860b;
+}
+
+.high-scores-list li:nth-child(2) {
+  background: linear-gradient(135deg, rgba(192, 192, 192, 0.15), rgba(192, 192, 192, 0.25));
+  border-left: 4px solid silver;
+  color: #7d7d7d;
+}
+
+.high-scores-list li:nth-child(3) {
+  background: linear-gradient(135deg, rgba(205, 127, 50, 0.15), rgba(205, 127, 50, 0.25));
+  border-left: 4px solid #cd7f32;
+  color: #a6682a;
+}
+
+.score-rank {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.score-rank .medal {
+  font-size: 20px;
+}
+
+.score-value {
+  font-weight: bold;
+  font-size: 18px;
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.85);
+  z-index: 999;
+  backdrop-filter: blur(4px);
+}
+
+.card {
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  padding: 40px 50px;
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  text-align: center;
+  max-width: 500px;
+  width: 90%;
+  border: 2px solid var(--color-primary);
+  animation: cardAppear 0.3s ease-out;
+}
+
+@keyframes cardAppear {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.card h2 {
+  color: #2c3e50;
+  margin-bottom: 20px;
+  font-size: 2.5rem;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+}
+
+.card p {
+  color: #34495e;
+  margin-bottom: 30px;
+  font-size: 1.3rem;
+  line-height: 1.5;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+  margin: 20px 0;
+}
+
+.stat-item {
+  background: #f8f9fa;
+  padding: 15px;
+  border-radius: 10px;
+  border-left: 4px solid var(--color-primary);
+}
+
+.stat-item.danger-stat {
+  border-left-color: var(--color-danger);
+}
+
+.stat-item.success-stat {
+  border-left-color: var(--color-success);
+}
+
+.stat-item.warning-stat {
+  border-left-color: var(--color-warning);
+}
+
+button {
+  background: linear-gradient(to bottom, var(--color-primary) 0%, #2a8aff 100%);
+  border: 0;
+  padding: 15px 30px;
+  border-radius: 10px;
+  color: white;
+  cursor: pointer;
+  font-weight: 900;
+  font-size: 1.2em;
+  transition: all 0.2s;
+  box-shadow: 0 6px 0 rgba(42, 138, 255, 0.3);
+  position: relative;
+  overflow: hidden;
+  margin-top: 20px;
+}
+
+button:hover {
+  background: linear-gradient(to bottom, var(--color-primary-hover) 0%, #4aa3ff 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 0 rgba(42, 138, 255, 0.3);
+}
+
+button:active {
+  transform: translateY(4px);
+  box-shadow: 0 2px 0 rgba(42, 138, 255, 0.3);
+}
+
+#resetScoresBtn {
+  background: linear-gradient(to bottom, #ff4757 0%, #c0392b 100%);
+  box-shadow: 0 6px 0 rgba(192, 57, 43, 0.3);
+  margin-left: 10px;
+}
+
+#resetScoresBtn:hover {
+  background: linear-gradient(to bottom, #ff6b81 0%, #ff4757 100%);
+  box-shadow: 0 8px 0 rgba(192, 57, 43, 0.3);
+}
+
+.controls-info {
+  margin-top: 15px;
+  color: #5d6d7e;
+  font-size: 16px;
+  opacity: 0.9;
+  background: rgba(255, 255, 255, 0.7);
+  padding: 8px 15px;
+  border-radius: 8px;
+}
+
+.particle {
+  position: absolute;
+  pointer-events: none;
+  z-index: 100;
+}
+
+.score-popup {
+  position: absolute;
+  color: #27ae60;
+  font-weight: bold;
+  font-size: 28px;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+  pointer-events: none;
+  z-index: 50;
+  animation: scoreFloat 1s ease-out forwards;
+}
+
+.fail-popup {
+  position: absolute;
+  color: var(--color-danger);
+  font-weight: bold;
+  font-size: 28px;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+  pointer-events: none;
+  z-index: 50;
+  animation: failFloat 1s ease-out forwards;
+}
+
+@keyframes scoreFloat {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-60px) scale(1.2);
+  }
+}
+
+@keyframes failFloat {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-60px) scale(1.2);
+    color: #ff3838;
+  }
+}
+
+.falling-counter {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  background: rgba(255, 71, 87, 0.15);
+  padding: 10px 15px;
+  border-radius: 8px;
+  border: 2px solid var(--color-danger);
+  font-weight: bold;
+  color: var(--color-danger);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 10;
+}
+
+.new-record-badge {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  background: linear-gradient(135deg, gold, #ffd700);
+  color: #b8860b;
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: bold;
+  animation: bounce 1s infinite alternate;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  z-index: 101;
+}
+
+@keyframes bounce {
+  from { transform: translateY(0); }
+  to { transform: translateY(-5px); }
+}
+
+@media (max-width: 850px) {
+  canvas {
+    width: 95vw;
+    height: auto;
+    max-height: 70vh;
+  }
+  
+  .hud {
+    flex-direction: column;
+    gap: 10px;
+    align-items: center;
+  }
+  
+  .hud-item {
+    width: 90vw;
+    max-width: 300px;
+  }
+  
+  .falling-counter {
+    position: static;
+    margin-top: 10px;
+    order: -1;
+  }
+  
+  .card {
+    padding: 30px 20px;
+  }
+  
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<div class="falling-counter">
+  <span>❌ Caigudes: <span id="missed">0</span></span>
+</div>
+
+<div class="hud">
+  <div class="hud-item">Puntuació: <span id="score">0</span></div>
+  <div class="hud-item">Velocitat: <span id="speed">1.0x</span></div>
+  <div class="hud-item danger">Màxim errors: <span id="maxFails">5</span></div>
+  <div class="hud-item high-scores">
+    🏆 Millors Punts
+    <div class="high-scores-panel">
+      <h4>Top 5 Resultats</h4>
+      <ul class="high-scores-list" id="highScoresList">
+        <!-- Las puntuaciones se cargarán aquí -->
+      </ul>
+    </div>
+  </div>
+</div>
+
+<canvas id="c" width="800" height="600"></canvas>
+
+<div class="controls-info">Atrapa les fruites, evita les verdures! | Controls: Fletxes ← → o A D</div>
+
+<div class="overlay" id="overlay">
+  <div class="card">
+    <h2>Game Over</h2>
+    <p id="resultText"></p>
+    
+    <div class="stats-grid">
+      <div class="stat-item success-stat">
+        <strong>Puntuació Final:</strong>
+        <div id="finalScore" style="font-size: 2rem; color: #2ecc71;">0</div>
+      </div>
+      <div class="stat-item danger-stat">
+        <strong>Caigudes:</strong>
+        <div id="finalMissed" style="font-size: 2rem; color: #ff4757;">0</div>
+      </div>
+      <div class="stat-item">
+        <strong>Frutes atrapades:</strong>
+        <div id="fruitsCaught" style="font-size: 1.5rem;">0</div>
+      </div>
+      <div class="stat-item">
+        <strong>Verdures evadides:</strong>
+        <div id="vegetablesAvoided" style="font-size: 1.5rem;">0</div>
+      </div>
+      <div class="stat-item warning-stat">
+        <strong>Verdures atrapades:</strong>
+        <div id="vegetablesCaught" style="font-size: 1.5rem; color: #f39c12;">0</div>
+      </div>
+      <div class="stat-item">
+        <strong>Millor puntuació:</strong>
+        <div id="bestScore" style="font-size: 1.5rem; color: #4aa3ff;">0</div>
+      </div>
+    </div>
+    
+    <div>
+      <button id="restart">Tornar a jugar</button>
+      <button id="resetScoresBtn">Borrar Rècords</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ====================
+// CONSTANTES DEL JUEGO
+// ====================
+const FRUITS = [
+  { emoji: "🍎", size: 55, color: "#e74c3c", points: 1 },
+  { emoji: "🍊", size: 55, color: "#e67e22", points: 1 },
+  { emoji: "🍋", size: 55, color: "#f1c40f", points: 1 },
+  { emoji: "🍐", size: 55, color: "#2ecc71", points: 1 },
+  { emoji: "🍌", size: 55, color: "#f39c12", points: 1 },
+  { emoji: "🍓", size: 50, color: "#e74c3c", points: 2 },
+  { emoji: "🍑", size: 55, color: "#ff9ff3", points: 2 },
+  { emoji: "🍒", size: 45, color: "#c0392b", points: 3 },
+  { emoji: "🥭", size: 60, color: "#f1c40f", points: 2 },
+  { emoji: "🥝", size: 50, color: "#27ae60", points: 1 }
+];
+
+const VEGETABLES = [
+  { emoji: "🥕", size: 55, color: "#e67e22", danger: 1 },
+  { emoji: "🥒", size: 55, color: "#27ae60", danger: 1 },
+  { emoji: "🍅", size: 55, color: "#c0392b", danger: 1 },
+  { emoji: "🌶️", size: 50, color: "#c0392b", danger: 1 },
+  { emoji: "🧅", size: 60, color: "#9b59b6", danger: 1 },
+  { emoji: "🧄", size: 50, color: "#ffffff", danger: 1 },
+  { emoji: "🥦", size: 60, color: "#27ae60", danger: 1 },
+  { emoji: "🌽", size: 65, color: "#f1c40f", danger: 1 },
+  { emoji: "🍆", size: 60, color: "#8e44ad", danger: 1 },
+  { emoji: "🥬", size: 55, color: "#27ae60", danger: 1 },
+  { emoji: "🥔", size: 55, color: "#e67e22", danger: 1 },
+  { emoji: "🥑", size: 60, color: "#27ae60", danger: 1 }
+];
+
+const W = 800, H = 600;
+const BASKET_W = 110, BASKET_H = 65;
+const BASKET_SPEED = 650;
+const BASE_SPAWN_INTERVAL = 800;
+const BASE_SPEED = 160;
+const MAX_FAILS = 5;
+const MAX_HIGH_SCORES = 5;
+
+// ====================
+// VARIABLES DE JUEGO
+// ====================
+const canvas = document.getElementById("c");
+const ctx = canvas.getContext("2d");
+const scoreEl = document.getElementById("score");
+const speedEl = document.getElementById("speed");
+const missedEl = document.getElementById("missed");
+const maxFailsEl = document.getElementById("maxFails");
+const overlay = document.getElementById("overlay");
+const resultText = document.getElementById("resultText");
+const finalScoreEl = document.getElementById("finalScore");
+const finalMissedEl = document.getElementById("finalMissed");
+const fruitsCaughtEl = document.getElementById("fruitsCaught");
+const vegetablesAvoidedEl = document.getElementById("vegetablesAvoided");
+const vegetablesCaughtEl = document.getElementById("vegetablesCaught");
+const bestScoreEl = document.getElementById("bestScore");
+const restartBtn = document.getElementById("restart");
+const resetScoresBtn = document.getElementById("resetScoresBtn");
+const highScoresList = document.getElementById("highScoresList");
+
+let basket = { x: W / 2, y: H - 80, dx: 0 };
+let objects = [];
+let score = 0;
+let missedCount = 0;
+let spawnInterval = BASE_SPAWN_INTERVAL;
+let lastSpawn = 0;
+let running = true;
+let gameTime = 0;
+let particles = [];
+let scorePopups = [];
+let failPopups = [];
+let stats = {
+  fruitsCaught: 0,
+  vegetablesAvoided: 0,
+  vegetablesCaught: 0
+};
+
+// Cargar mejores puntuaciones desde localStorage
+let highScores = JSON.parse(localStorage.getItem('fruitsHunterHighScores')) || [];
+
+// ====================
+// SISTEMA DE MEJORES PUNTUACIONES
+// ====================
+function displayHighScores() {
+  highScoresList.innerHTML = '';
+  
+  if (highScores.length === 0) {
+    const li = document.createElement('li');
+    li.textContent = 'No hi ha registres';
+    li.style.textAlign = 'center';
+    li.style.fontStyle = 'italic';
+    li.style.color = '#7d7d7d';
+    highScoresList.appendChild(li);
+    return;
+  }
+  
+  // Mostrar las mejores puntuaciones
+  highScores.forEach((scoreItem, index) => {
+    const li = document.createElement('li');
+    
+    // Determinar medalla
+    let medal = '';
+    if (index === 0) medal = '🥇';
+    else if (index === 1) medal = '🥈';
+    else if (index === 2) medal = '🥉';
+    
+    li.innerHTML = `
+      <div class="score-rank">
+        <span class="medal">${medal}</span>
+        <span>#${index + 1}</span>
+      </div>
+      <span class="score-value">${scoreItem.score} pts</span>
+    `;
+    
+    // Mostrar fecha si existe
+    if (scoreItem.date) {
+      const dateSpan = document.createElement('span');
+      dateSpan.textContent = scoreItem.date;
+      dateSpan.style.fontSize = '12px';
+      dateSpan.style.color = '#7d7d7d';
+      li.appendChild(dateSpan);
+    }
+    
+    highScoresList.appendChild(li);
+  });
+}
+
+function saveHighScore(newScore) {
+  const date = new Date().toLocaleDateString('ca-ES');
+  const time = new Date().toLocaleTimeString('ca-ES', { hour: '2-digit', minute: '2-digit' });
+  
+  // Verificar si ya existe una puntuación igual o mayor
+  const isNewRecord = highScores.length === 0 || newScore > highScores[0].score;
+  
+  // Agregar nueva puntuación
+  highScores.push({ 
+    score: newScore, 
+    date: `${date} ${time}`,
+    timestamp: Date.now()
+  });
+  
+  // Ordenar de mayor a menor
+  highScores.sort((a, b) => b.score - a.score);
+  
+  // Mantener solo las 5 mejores
+  highScores = highScores.slice(0, MAX_HIGH_SCORES);
+  
+  // Guardar en localStorage
+  localStorage.setItem('fruitsHunterHighScores', JSON.stringify(highScores));
+  
+  // Actualizar la visualización
+  displayHighScores();
+  
+  return isNewRecord;
+}
+
+// ====================
+// FUNCIONES UTILITARIAS
+// ====================
+const rand = (min, max) => Math.random() * (max - min) + min;
+const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+
+// ====================
+// SISTEMA DE PARTÍCULAS
+// ====================
+function createParticles(x, y, count, color) {
+  for (let i = 0; i < count; i++) {
+    particles.push({
+      x, y,
+      vx: rand(-2, 2),
+      vy: rand(-3, -1),
+      size: rand(3, 8),
+      color: color || `hsl(${randInt(0, 360)}, 70%, 60%)`,
+      life: 1,
+      decay: rand(0.01, 0.03)
+    });
+  }
+}
+
+function updateParticles(dt) {
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy += 0.05;
+    p.life -= p.decay;
+    
+    if (p.life <= 0) {
+      particles.splice(i, 1);
+    }
+  }
+}
+
+function drawParticles() {
+  particles.forEach(p => {
+    ctx.globalAlpha = p.life;
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+    ctx.fill();
+  });
+  ctx.globalAlpha = 1;
+}
+
+// ====================
+// SISTEMA DE POPUPS
+// ====================
+function createScorePopup(x, y, points) {
+  scorePopups.push({
+    x, y,
+    text: `+${points}`,
+    life: 1,
+    yOffset: 0
+  });
+}
+
+function createFailPopup(x, y, text) {
+  failPopups.push({
+    x, y,
+    text: text,
+    life: 1,
+    yOffset: 0
+  });
+}
+
+function updateScorePopups(dt) {
+  for (let i = scorePopups.length - 1; i >= 0; i--) {
+    const popup = scorePopups[i];
+    popup.life -= 0.01;
+    popup.yOffset += 0.5;
+    
+    if (popup.life <= 0) {
+      scorePopups.splice(i, 1);
+    }
+  }
+  
+  for (let i = failPopups.length - 1; i >= 0; i--) {
+    const popup = failPopups[i];
+    popup.life -= 0.01;
+    popup.yOffset += 0.5;
+    
+    if (popup.life <= 0) {
+      failPopups.splice(i, 1);
+    }
+  }
+}
+
+function drawScorePopups() {
+  scorePopups.forEach(popup => {
+    ctx.globalAlpha = popup.life;
+    ctx.font = `bold ${24 + popup.life * 10}px Arial`;
+    ctx.fillStyle = popup.life > 0.5 ? "#27ae60" : "#2ecc71";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(popup.text, popup.x, popup.y - popup.yOffset);
+  });
+  
+  failPopups.forEach(popup => {
+    ctx.globalAlpha = popup.life;
+    ctx.font = `bold ${24 + popup.life * 10}px Arial`;
+    ctx.fillStyle = popup.life > 0.5 ? "#ff4757" : "#ff3838";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(popup.text, popup.x, popup.y - popup.yOffset);
+  });
+  
+  ctx.globalAlpha = 1;
+}
+
+// ====================
+// GESTIÓN DE OBJETOS
+// ====================
+function spawnObject() {
+  const isFruit = Math.random() < 0.75; // 75% frutas, 25% verduras
+  const item = isFruit ? 
+    FRUITS[Math.floor(Math.random() * FRUITS.length)] :
+    VEGETABLES[Math.floor(Math.random() * VEGETABLES.length)];
+  
+  const scale = 0.8 + Math.random() * 0.4;
+  
+  objects.push({
+    x: rand(60, W - 60),
+    y: -70,
+    vx: rand(-25, 25),
+    vy: BASE_SPEED * rand(0.7, 1.2),
+    emoji: item.emoji,
+    size: item.size * scale,
+    color: item.color,
+    type: isFruit ? "fruit" : "danger",
+    points: item.points || 0,
+    danger: item.danger || 1,
+    rotation: rand(0, Math.PI * 2),
+    rotationSpeed: rand(-0.05, 0.05),
+    isFruit: isFruit
+  });
+}
+
+// ====================
+// ACTUALIZACIÓN DEL JUEGO
+// ====================
+function update(dt) {
+  if (!running) return;
+  
+  const dtS = dt / 1000;
+  gameTime += dtS;
+  
+  // Actualizar cesta
+  basket.x += basket.dx * dtS;
+  basket.x = clamp(basket.x, BASKET_W / 2, W - BASKET_W / 2);
+  
+  // Actualizar objetos
+  for (let i = objects.length - 1; i >= 0; i--) {
+    const o = objects[i];
+    
+    // Física mejorada
+    o.vy += 35 * dtS;
+    o.x += o.vx * dtS;
+    o.y += o.vy * dtS;
+    o.rotation += o.rotationSpeed;
+    
+    // Rebote en paredes
+    if (o.x - o.size / 2 < 20) {
+      o.x = 20 + o.size / 2;
+      o.vx = Math.abs(o.vx) * 0.8;
+    }
+    if (o.x + o.size / 2 > W - 20) {
+      o.x = W - 20 - o.size / 2;
+      o.vx = -Math.abs(o.vx) * 0.8;
+    }
+    
+    // Detección de colisión con cesta
+    const basketLeft = basket.x - BASKET_W / 2;
+    const basketRight = basket.x + BASKET_W / 2;
+    const basketTop = basket.y - BASKET_H / 2;
+    
+    if (o.y + o.size / 2 >= basketTop &&
+        o.x + o.size / 2 >= basketLeft &&
+        o.x - o.size / 2 <= basketRight &&
+        o.y - o.size / 2 <= basket.y + BASKET_H / 2) {
+      
+      if (o.type === "danger") {
+        // Verdura capturada - GAME OVER
+        stats.vegetablesCaught++;
+        createParticles(o.x, o.y, 25, "#ff4757");
+        createFailPopup(o.x, o.y, "VERDURA!");
+        gameOver(`Has agafat una verdura ${o.emoji}!`);
+        return;
+      } else {
+        // Fruta capturada
+        score += o.points;
+        stats.fruitsCaught++;
+        createParticles(o.x, o.y, 15, o.color);
+        createScorePopup(o.x, o.y, o.points);
+        objects.splice(i, 1);
+        updateHUD();
+        continue;
+      }
+    }
+    
+    // Contar objetos que se caen (pasan por debajo)
+    if (o.y > H + 50 && !o.countedAsMissed) {
+      o.countedAsMissed = true;
+      
+      if (o.isFruit) {
+        // Fruta que se cayó
+        missedCount++;
+        createFailPopup(o.x, H - 50, "¡Caigut!");
+        createParticles(o.x, H, 10, "#ff9f43");
+        
+        if (missedCount >= MAX_FAILS) {
+          gameOver("Masses fruits caiguts!");
+          return;
+        }
+        
+        updateHUD();
+      } else {
+        // Verdura que se cayó - buena evitación
+        stats.vegetablesAvoided++;
+        createScorePopup(o.x, H - 50, "Bona!");
+        createParticles(o.x, H, 10, "#2ecc71");
+      }
+      
+      objects.splice(i, 1);
+      continue;
+    }
+  }
+  
+  // Ajustar dificultad
+  const difficulty = 1 + score * 0.04;
+  spawnInterval = BASE_SPAWN_INTERVAL / difficulty;
+  
+  // Actualizar sistemas visuales
+  updateParticles(dt);
+  updateScorePopups(dt);
+}
+
+// ====================
+// RENDERIZADO
+// ====================
+function draw() {
+  // Fondo con gradiente animado
+  const gradient = ctx.createLinearGradient(0, 0, 0, H);
+  const timeFactor = Math.sin(gameTime * 0.5) * 0.1 + 0.9;
+  gradient.addColorStop(0, `hsl(215, ${60 * timeFactor}%, ${85 * timeFactor}%)`);
+  gradient.addColorStop(1, `hsl(215, ${50 * timeFactor}%, ${75 * timeFactor}%)`);
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, W, H);
+  
+  // Indicador de zona de caída (muy sutil)
+  ctx.strokeStyle = missedCount >= MAX_FAILS - 1 ? "rgba(255, 71, 87, 0.3)" : "rgba(0, 0, 0, 0.1)";
+  ctx.lineWidth = 2;
+  ctx.setLineDash([15, 10]);
+  ctx.beginPath();
+  ctx.moveTo(0, H - 10);
+  ctx.lineTo(W, H - 10);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  
+  // Contador visual de fallos restantes (muy discreto)
+  const remainingFails = MAX_FAILS - missedCount;
+  for (let i = 0; i < MAX_FAILS; i++) {
+    ctx.fillStyle = i < remainingFails ? "rgba(46, 204, 113, 0.4)" : "rgba(255, 71, 87, 0.4)";
+    ctx.fillRect(10 + i * 22, H - 20, 18, 8);
+  }
+  
+  // Dibujar sistemas visuales
+  drawParticles();
+  drawScorePopups();
+  
+  // Dibujar objetos - TODOS CON EL MISMO ESTILO
+  objects.forEach(drawObject);
+  
+  // Dibujar cesta
+  drawBasket();
+  
+  // Sombra de la cesta
+  ctx.save();
+  ctx.globalAlpha = 0.3;
+  ctx.fillStyle = "black";
+  ctx.beginPath();
+  ctx.ellipse(basket.x, basket.y + BASKET_H / 2 + 5, 
+              BASKET_W / 2 + 10, 15, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+  
+  requestAnimationFrame(gameLoop);
+}
+
+function drawObject(o) {
+  ctx.save();
+  ctx.translate(o.x, o.y);
+  ctx.rotate(o.rotation);
+  
+  // TODOS LOS OBJETOS TIENEN EL MISMO ESTILO - no se distingue fruta de verdura
+  ctx.shadowColor = "rgba(0, 0, 0, 0.4)";
+  ctx.shadowBlur = 20;
+  ctx.shadowOffsetY = 5;
+  
+  // Texto del emoji
+  ctx.font = `${o.size}px "Segoe UI Emoji", "Apple Color Emoji", sans-serif`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(o.emoji, 0, 0);
+  
+  // Resplandor para frutas especiales (solo si tienen puntos extra)
+  if (o.points > 1) {
+    ctx.shadowColor = o.color;
+    ctx.shadowBlur = 30;
+    ctx.fillText(o.emoji, 0, 0);
+  }
+  
+  ctx.restore();
+}
+
+function drawBasket() {
+  const x = basket.x, y = basket.y;
+  
+  // Asa de la cesta
+  ctx.lineWidth = 8;
+  ctx.lineCap = "round";
+  ctx.strokeStyle = "#5c3b16";
+  ctx.beginPath();
+  ctx.moveTo(x - BASKET_W / 2 + 10, y - BASKET_H / 2 - 5);
+  ctx.bezierCurveTo(
+    x - BASKET_W / 2, y - BASKET_H - 40,
+    x + BASKET_W / 2, y - BASKET_H - 40,
+    x + BASKET_W / 2 - 10, y - BASKET_H / 2 - 5
+  );
+  ctx.stroke();
+  
+  // Cuerpo de la cesta
+  const basketGradient = ctx.createLinearGradient(
+    x - BASKET_W / 2, y - BASKET_H / 2,
+    x + BASKET_W / 2, y + BASKET_H / 2
+  );
+  basketGradient.addColorStop(0, "#8b5a2b");
+  basketGradient.addColorStop(0.5, "#a6713a");
+  basketGradient.addColorStop(1, "#8b5a2b");
+  
+  ctx.fillStyle = basketGradient;
+  ctx.fillRect(x - BASKET_W / 2, y - BASKET_H / 2, BASKET_W, BASKET_H);
+  
+  // Detalle de tejido
+  ctx.strokeStyle = "#4b3417";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(x - BASKET_W / 2, y - BASKET_H / 2, BASKET_W, BASKET_H);
+  
+  // Líneas horizontales del tejido
+  ctx.beginPath();
+  for (let i = 1; i < 5; i++) {
+    const lineY = y - BASKET_H / 2 + (BASKET_H / 5) * i;
+    ctx.moveTo(x - BASKET_W / 2, lineY);
+    ctx.lineTo(x + BASKET_W / 2, lineY);
+  }
+  ctx.stroke();
+}
+
+// ====================
+// INTERFAZ Y CONTROLES
+// ====================
+function updateHUD() {
+  scoreEl.textContent = score;
+  speedEl.textContent = (1 + score * 0.04).toFixed(2) + "x";
+  missedEl.textContent = missedCount;
+  maxFailsEl.textContent = MAX_FAILS;
+  
+  // Actualizar color del contador de fallos
+  const remaining = MAX_FAILS - missedCount;
+  if (remaining <= 2) {
+    missedEl.parentElement.style.animation = "pulse 0.5s infinite";
+  } else {
+    missedEl.parentElement.style.animation = "none";
+  }
+}
+
+function gameOver(msg) {
+  running = false;
+  resultText.textContent = msg;
+  finalScoreEl.textContent = score;
+  finalMissedEl.textContent = missedCount;
+  fruitsCaughtEl.textContent = stats.fruitsCaught;
+  vegetablesAvoidedEl.textContent = stats.vegetablesAvoided;
+  vegetablesCaughtEl.textContent = stats.vegetablesCaught;
+  
+  // Obtener mejor puntuación actual
+  const bestScore = highScores.length > 0 ? highScores[0].score : 0;
+  bestScoreEl.textContent = bestScore;
+  
+  // Guardar la puntuación actual si merece estar en el top 5
+  const isNewRecord = saveHighScore(score);
+  
+  overlay.style.display = "flex";
+  createParticles(basket.x, basket.y, 50, "#ff4757");
+  
+  // Mostrar mensaje especial si es nuevo récord
+  if (isNewRecord && score > 0) {
+    setTimeout(() => {
+      alert(`🏆 NOU RÈCORD! Has aconseguit ${score} punts! 🎉\n\nAra ets el número 1 al marcador!`);
+    }, 300);
+  }
+}
+
+restartBtn.addEventListener("click", () => location.reload());
+
+resetScoresBtn.addEventListener("click", () => {
+  if (confirm("Estàs segur que vols borrar TOTS els rècords del joc?")) {
+    localStorage.removeItem('fruitsHunterHighScores');
+    highScores = [];
+    displayHighScores();
+    alert("Rècords borrats correctament.");
+    bestScoreEl.textContent = "0";
+  }
+});
+
+// Controles de teclado mejorados
+const keys = {};
+window.addEventListener("keydown", e => {
+  keys[e.key.toLowerCase()] = true;
+  updateBasketMovement();
+});
+
+window.addEventListener("keyup", e => {
+  keys[e.key.toLowerCase()] = false;
+  updateBasketMovement();
+});
+
+function updateBasketMovement() {
+  const left = keys["arrowleft"] || keys["a"];
+  const right = keys["arrowright"] || keys["d"];
+  
+  if (left && !right) {
+    basket.dx = -BASKET_SPEED;
+  } else if (right && !left) {
+    basket.dx = BASKET_SPEED;
+  } else {
+    basket.dx = 0;
+  }
+}
+
+// Controles táctiles para móviles
+canvas.addEventListener("touchstart", handleTouch);
+canvas.addEventListener("touchmove", handleTouch);
+
+function handleTouch(e) {
+  e.preventDefault();
+  const touch = e.touches[0];
+  const rect = canvas.getBoundingClientRect();
+  const touchX = touch.clientX - rect.left;
+  
+  basket.x = clamp(touchX * (W / rect.width), BASKET_W / 2, W - BASKET_W / 2);
+}
+
+// ====================
+// BUCLE PRINCIPAL
+// ====================
+let lastTime = 0;
+function gameLoop(currentTime) {
+  const dt = currentTime - lastTime;
+  lastTime = currentTime;
+  
+  if (running && currentTime - lastSpawn > spawnInterval) {
+    spawnObject();
+    lastSpawn = currentTime;
+  }
+  
+  update(dt);
+  draw();
+}
+
+// Iniciar juego
+displayHighScores();
+updateHUD();
+requestAnimationFrame(gameLoop);
+
+// Mostrar controles al inicio
+setTimeout(() => {
+  alert("🍎 CAÇADOR DE FRUITES 🍌\n\n🏆 Els teus millors resultats es guarden automàticament!\n\n🎮 CONTROLS:\n← → (Fletxes) o A/D: Moure la cistella\n\n🎯 OBJECTIU:\nAtrapa les FRUITES (+puntuació)\nEVITA les VERDURES (game over)\n\nBona sort!");
+}, 500);
+</script>
+</body>
+</html>
